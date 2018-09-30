@@ -8,6 +8,7 @@ class IntRegisterService extends SimplifiedService {
     @Override
     protected byte[] execute(byte[] bytes) {
         IntRegisterCommand command = IntRegisterCommand.deserialize(bytes);
+        System.out.println("Asked to perform " + command.toString());
 
         return command.apply(register);
     }

@@ -5,7 +5,8 @@ import java.util.function.Function;
 abstract class IntRegisterCommand implements Function<IntRegister, byte[]> {
     static IntRegisterCommand deserialize(byte[] bytes) {
         if (bytes == null) throw new IllegalArgumentException();
-        return bytes.length == 0 ? new Read() : new Write(Utils.deserializeInt(bytes));
+        if (bytes.length > 0 && bytes[0] == 42) return new Read();
+        else return new Write(Utils.deserializeInt(bytes));
     }
 
     abstract byte[] serialize();
@@ -21,7 +22,7 @@ final class Read extends IntRegisterCommand {
 
     @Override
     byte[] serialize() {
-        return new byte[0];
+        return new byte[]{42};
     }
 
     @Override
