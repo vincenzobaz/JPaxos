@@ -5,7 +5,6 @@ import lsr.paxos.client.Client;
 import lsr.paxos.client.ReplicationException;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class ClientLauncher {
@@ -21,12 +20,18 @@ public class ClientLauncher {
         while (true) {
             System.out.println("Ready to take orders");
             String input = sc.nextLine();
-            IntRegisterCommand c = input.equals("READ") ? new Read() : new Write(Integer.parseInt(input));
-            byte[] response = client.execute(c.serialize());
-            System.out.println("RAW RESPONSE: " + Arrays.toString(response));
-            String output = response.length == 0 ?
-                    "Wrote to replicas" :
-                    "Read value " + Utils.deserializeInt(response);
+            Command c;
+            if (input.equals("READ")) {
+                c = new Command(CommandType.READ, -1);
+            } else {
+                c = new Command(CommandType.READ, Integer.parseInt(input));
+            }
+            Response response = new Response(client.execute(c.toByteArray()));
+
+            String output = response.isRead() ?
+                    "Read value " + response.getValue() :
+                    "Wrote to replicas";
+
             System.out.println("Response: " + output);
         }
     }
