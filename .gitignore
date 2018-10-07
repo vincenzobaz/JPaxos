@@ -1,3 +1,21 @@
 bin
 *.swp
 jpaxosLogs
+
+# SBT
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+.history
+.cache
+.lib/
+
+### Scala ###
+*.class
+*.log
+
+# IDE / Editor
+.idea
