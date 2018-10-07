@@ -6,8 +6,7 @@ import java.io.ByteArrayInputStream;
 
 import java.nio.ByteBuffer;
 
-
-class Response {
+public class Response {
     private byte containsValue;
     private int value;
 
@@ -36,4 +35,11 @@ class Response {
     public boolean isRead() { return containsValue > 0; }
 
     public int getValue() { return value; }
+
+    @Override
+    public String toString() {
+        if (isRead()) return "READ(" + value + ")";
+        else return "WRITE";
+    }
+
 }

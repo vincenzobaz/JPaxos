@@ -6,22 +6,7 @@ import java.io.IOException;
 
 import java.nio.ByteBuffer;
 
-enum CommandType {
-    READ, WRITE;
-
-    public static CommandType fromInt(int i) {
-        switch (i) {
-            case 0:
-                return READ;
-            case 1:
-                return WRITE;
-            default:
-                throw new IllegalArgumentException();
-        }
-    }
-}
-
-class Command {
+public class Command {
     private final CommandType type;
     private final int value;
 
