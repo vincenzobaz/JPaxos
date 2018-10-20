@@ -315,7 +315,7 @@ public class ConsensusInstance implements Serializable {
     }
 
     public String toString() {
-        return "(" + id + ", " + state + ", view=" + view + ", value=" + value + ")";
+        return "(" + id + ", " + state + ", view=" + view + ", value=" + Arrays.toString(value) + ")";
     }
 
     /** Called when received a higher view Accept */
