@@ -34,6 +34,7 @@ import lsr.paxos.storage.ClientBatchStore;
 import lsr.paxos.storage.ConsensusInstance;
 import lsr.paxos.storage.ConsensusInstance.LogEntryState;
 import lsr.paxos.storage.Storage;
+import lsr.paxos.storage.LogListener;
 import lsr.service.Service;
 
 import org.slf4j.Logger;
@@ -632,6 +633,14 @@ public class Replica {
                 return true;
         }
         return false;
+    }
+
+    public String logView() {
+        return paxos.getStorage().getLog().toString();
+    }
+
+    public boolean addLogListener(LogListener listener) {
+        return paxos.getStorage().getLog().addLogListener(listener);
     }
 
     private final static Logger logger = LoggerFactory.getLogger(Replica.class);
