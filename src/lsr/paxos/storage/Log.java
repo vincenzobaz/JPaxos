@@ -257,5 +257,13 @@ public class Log {
         return new ConsensusInstance(nextId, LogEntryState.KNOWN, view, value);
     }
 
+    @Override
+    public String toString() {
+        return instances.values()
+            .stream()
+            .map(ConsensusInstance::toString)
+            .reduce((a, b) -> a + " " + b).get();
+    }
+
     private final static Logger logger = LoggerFactory.getLogger(Log.class);
 }
