@@ -33,7 +33,6 @@ public class IntRegisterService extends SimplifiedService {
             default:
                 throw new IllegalArgumentException();
         }
-        System.out.println("Asked to perform " + command.toString());
         return r.toByteArray();
     }
 
