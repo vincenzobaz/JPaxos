@@ -126,6 +126,7 @@ public class ProposerImpl implements Proposer {
 
         Prepare prepare = new Prepare(storage.getView(), storage.getFirstUncommitted());
         prepareRetransmitter.startTransmitting(prepare, Network.OTHERS);
+        paxos.getElector().onMessageReceived(prepare, processDescriptor.localId);
 
         if (processDescriptor.indirectConsensus)
             fetchLocalMissingBatches();
@@ -164,10 +165,9 @@ public class ProposerImpl implements Proposer {
     }
 
     private void setNextViewNumber() {
+        // VINZ: Fix
         int view = storage.getView();
-        do {
-            view++;
-        } while (!processDescriptor.isLocalProcessLeader(view));
+        view++;
         storage.setView(view);
     }
 
@@ -228,6 +228,7 @@ public class ProposerImpl implements Proposer {
         waitingFBRs.clear();
 
         state = ProposerState.PREPARED;
+        paxos.getElector().stop();
 
         logger.info(processDescriptor.logMark_Benchmark, "View prepared {}", storage.getView());
 

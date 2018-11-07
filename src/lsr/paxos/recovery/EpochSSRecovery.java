@@ -80,7 +80,7 @@ public class EpochSSRecovery extends RecoveryAlgorithm implements Runnable {
 
     private Storage createStorage() throws IOException {
         Storage storage = new InMemoryStorage();
-        if (processDescriptor.isLocalProcessLeader(storage.getView())) {
+        if (storage.isLocalProcessLeader(storage.getView())) {
             storage.setView(storage.getView() + 1);
         }
 
@@ -129,7 +129,7 @@ public class EpochSSRecovery extends RecoveryAlgorithm implements Runnable {
 
             if (logger.isInfoEnabled())
                 logger.info("Got a recovery answer {}{}", recoveryAnswer,
-                        (processDescriptor.getLeaderOfView(recoveryAnswer.getView()) == sender
+                        (storage.getLeaderOfView(recoveryAnswer.getView()) == sender
                                 ? " from leader" : ""));
 
             dispatcher.submit(new Runnable() {
@@ -148,7 +148,7 @@ public class EpochSSRecovery extends RecoveryAlgorithm implements Runnable {
                         answerFromLeader = null;
                     }
 
-                    if (processDescriptor.getLeaderOfView(storage.getView()) == sender) {
+                    if (storage.getLeader() == sender) {
                         answerFromLeader = recoveryAnswer;
                     }
 

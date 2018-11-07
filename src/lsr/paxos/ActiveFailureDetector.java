@@ -119,14 +119,14 @@ final public class ActiveFailureDetector implements Runnable, FailureDetector {
                 while (true) {
                     long now = getTime();
                     // Leader role
-                    if (processDescriptor.isLocalProcessLeader(view)) {
+                    if (storage.isLocalProcessLeader(view)) {
                         // Send
                         Alive alive = new Alive(view, storage.getLog().getNextId());
                         network.sendToOthers(alive);
                         lastHeartbeatSentTS = now;
                         long nextSend = lastHeartbeatSentTS + sendTimeout;
 
-                        while (now < nextSend && processDescriptor.isLocalProcessLeader(view)) {
+                        while (now < nextSend && storage.isLocalProcessLeader(view)) {
                             if (logger.isTraceEnabled()) {
                                 logger.trace("Sending next Alive in {} ms", nextSend - now);
                             }
@@ -145,18 +145,18 @@ final public class ActiveFailureDetector implements Runnable, FailureDetector {
                         long suspectTime = lastHeartbeatRcvdTS + suspectTimeout;
                         // Loop until either this process becomes the leader or
                         // until is time to suspect the leader
-                        while (now < suspectTime && !processDescriptor.isLocalProcessLeader(view)) {
+                        while (now < suspectTime && !storage.isLocalProcessLeader(view)) {
 
                             if (logger.isTraceEnabled()) {
                                 logger.trace("Suspecting leader ({}) in {} ms",
-                                        processDescriptor.getLeaderOfView(view), suspectTime - now);
+                                        storage.getLeaderOfView(view), suspectTime - now);
                             }
 
                             wait(suspectTime - now);
                             now = getTime();
                             suspectTime = lastHeartbeatRcvdTS + suspectTimeout;
                         }
-                        if (!processDescriptor.isLocalProcessLeader(view)) {
+                        if (!storage.isLocalProcessLeader(view)) {
                             // Raise the suspicion. A suspect task will be
                             // queued for execution
                             // on the Protocol thread.
@@ -197,19 +197,19 @@ final public class ActiveFailureDetector implements Runnable, FailureDetector {
 
         public void onMessageReceived(Message message, int sender) {
             // followers only.
-            if (processDescriptor.isLocalProcessLeader(view))
+            if (storage.isLocalProcessLeader(view))
                 return;
 
             // Use the message as heartbeat if the local process is
             // a follower and the sender is the leader of the current view
-            if (sender == processDescriptor.getLeaderOfView(view)) {
+            if (sender == storage.getLeaderOfView(view)) {
                 lastHeartbeatRcvdTS = getTime();
             }
         }
 
         public void onMessageSent(Message message, BitSet destinations) {
             // leader only.
-            if (!processDescriptor.isLocalProcessLeader(view))
+            if (!storage.isLocalProcessLeader(view))
                 return;
 
             // Ignore Alive messages, the clock was already reset when the

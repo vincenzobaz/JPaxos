@@ -76,6 +76,43 @@ public interface Storage {
     int getView();
 
     /**
+     * Returns the current leader.
+     *
+     * @return the id of the current leader
+     */
+    int getLeader();
+
+    /**
+     * Sets the leader for the current view.
+     *
+     * @param id the id of the new leader
+     */
+    void setLeader(int id);
+
+    /**
+     * Returns the leader of a given view.
+     *
+     * @param viewId the id whose leader is of interest
+     * @return the id of the replica that was leader of the given view
+     */
+    int getLeaderOfView(int viewId);
+
+    /**
+     * Returns whether this process is leader of the current view
+     *
+     * @return true if this replica is the leader of the current view, false otherwise
+     */
+    boolean isLocalProcessLeader();
+
+    /**
+     * Returns whether this process is the leader of the current view
+     *
+     * @param viewId the view of interest.
+     * @return true if this replica was leader of the provided view, false otherwise
+     */
+    boolean isLocalProcessLeader(int viewId);
+
+    /**
      * Returns the epoch array - known epoch number of every process.
      * 
      * @return the array with epoch numbers

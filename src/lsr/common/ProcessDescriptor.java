@@ -345,14 +345,6 @@ public final class ProcessDescriptor {
         return config.getProcess(localId);
     }
 
-    public int getLeaderOfView(int view) {
-        return view % numReplicas;
-    }
-
-    public boolean isLocalProcessLeader(int view) {
-        return getLeaderOfView(view) == localId;
-    }
-
     private final static Logger logger = LoggerFactory.getLogger(ProcessDescriptor.class);
 
     /**

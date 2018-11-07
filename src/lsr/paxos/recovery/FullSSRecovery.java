@@ -43,7 +43,7 @@ public class FullSSRecovery extends RecoveryAlgorithm {
         storage.setEpoch(new long[] {epochFile.readNumber() + 1});
         epochFile.writeNumber(storage.getEpoch()[0]);
 
-        if (processDescriptor.isLocalProcessLeader(storage.getView())) {
+        if (storage.isLocalProcessLeader()) {
             storage.setView(storage.getView() + 1);
         }
         return storage;

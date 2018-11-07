@@ -4,14 +4,20 @@ import static lsr.common.ProcessDescriptor.processDescriptor;
 
 import java.util.ArrayList;
 import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import lsr.paxos.Snapshot;
 import lsr.paxos.storage.ConsensusInstance.LogEntryState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InMemoryStorage implements Storage {
     // Must be volatile because it is read by other threads
     // other than the Protocol thread without locking.
     protected volatile int view;
+    private volatile int leader = 0;
+    private final ConcurrentMap<Integer, Integer> leaders = new ConcurrentHashMap<>();
     private volatile int firstUncommitted = 0;
 
     protected Log log;
@@ -28,6 +34,7 @@ public class InMemoryStorage implements Storage {
      */
     public InMemoryStorage() {
         log = new Log();
+        leaders.put(0, 0);
     }
 
     /**
@@ -38,6 +45,7 @@ public class InMemoryStorage implements Storage {
      */
     public InMemoryStorage(Log log) {
         this.log = log;
+        leaders.put(0, 0);
     }
 
     public Log getLog() {
@@ -57,10 +65,41 @@ public class InMemoryStorage implements Storage {
         return view;
     }
 
+    @Override
+    public int getLeader() {
+        return leader;
+    }
+
+    @Override
+    public int getLeaderOfView(int viewId) {
+        return leaders.get(viewId);
+    }
+
+    @Override
+    public boolean isLocalProcessLeader() {
+        return leader == processDescriptor.localId;
+    }
+
+    @Override
+    public boolean isLocalProcessLeader(int viewId) {
+        return leaders.get(viewId) == processDescriptor.localId;
+    }
+
+    @Override
     public void setView(int view) throws IllegalArgumentException {
         assert view > this.view : "Cannot set smaller or equal view.";
         this.view = view;
+        this.leaders.put(view, leader);
         fireViewChangeListeners();
+        logger.info("InMemoryStorage: setting view {}", view);
+    }
+
+    @Override
+    public void setLeader(int id) {
+        this.leader = id;
+        this.leaders.put(view, id);
+        //fireViewChangeListeners();
+        logger.info("InMemoryStorage: setting leader {}", id);
     }
 
     public int getFirstUncommitted() {
@@ -129,7 +168,7 @@ public class InMemoryStorage implements Storage {
 
     protected void fireViewChangeListeners() {
         for (ViewChangeListener l : viewChangeListeners)
-            l.viewChanged(view, processDescriptor.getLeaderOfView(view));
+            l.viewChanged(view, leader);
     }
 
     public long getRunUniqueId() {
@@ -151,4 +190,6 @@ public class InMemoryStorage implements Storage {
         }
         return base;
     }
+
+    private final static Logger logger = LoggerFactory.getLogger(InMemoryStorage.class);
 }

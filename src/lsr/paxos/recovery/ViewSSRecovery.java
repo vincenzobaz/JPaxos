@@ -73,7 +73,7 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
     private Storage createStorage(SingleNumberWriter writer) {
         Storage storage = new SynchronousViewStorage(writer);
         firstRun = storage.getView() == 0;
-        if (processDescriptor.isLocalProcessLeader(storage.getView())) {
+        if (storage.isLocalProcessLeader()) {
             storage.setView(storage.getView() + 1);
         }
         return storage;
@@ -116,7 +116,7 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
                 logger.info(
                         "Got a recovery answer {}{}",
                         recoveryAnswer +
-                                (processDescriptor.getLeaderOfView(recoveryAnswer.getView()) == sender
+                                (storage.getLeaderOfView(recoveryAnswer.getView()) == sender
                                         ? " from leader" : ""));
 
             dispatcher.submit(new Runnable() {
@@ -133,7 +133,7 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
                         answerFromLeader = null;
                     }
 
-                    if (processDescriptor.getLeaderOfView(storage.getView()) == sender) {
+                    if (storage.getLeader() == sender) {
                         answerFromLeader = recoveryAnswer;
                     }
 

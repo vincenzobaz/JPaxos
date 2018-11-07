@@ -8,13 +8,7 @@ import java.util.concurrent.Future;
 
 import lsr.common.RequestType;
 import lsr.common.SingleThreadDispatcher;
-import lsr.paxos.ActiveFailureDetector;
-import lsr.paxos.Batcher;
-import lsr.paxos.FailureDetector;
-import lsr.paxos.NewPassiveBatcher;
-import lsr.paxos.Snapshot;
-import lsr.paxos.SnapshotMaintainer;
-import lsr.paxos.SnapshotProvider;
+import lsr.paxos.*;
 import lsr.paxos.core.Proposer.ProposerState;
 import lsr.paxos.messages.Accept;
 import lsr.paxos.messages.Alive;
@@ -56,6 +50,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     private final Acceptor acceptor;
     private final Learner learner;
     private DecideCallback decideCallback;
+    private LeaderElector elector;
 
     /**
      * Threading model - This class uses an event-driven threading model. It
@@ -157,6 +152,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             udpNetwork.start();
         network.start();
         dispatcher.start();
+        elector = new LeaderElector(storage);
     }
 
     public void setDecideCallback(DecideCallback decideCallback) {
@@ -239,7 +235,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
      *         <code>false</code> otherwise
      */
     public boolean isLeader() {
-        return processDescriptor.isLocalProcessLeader(storage.getView());
+        return storage.isLocalProcessLeader();
     }
 
     /**
@@ -248,7 +244,11 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
      * @return id of replica which is leader
      */
     public int getLeaderId() {
-        return processDescriptor.getLeaderOfView(storage.getView());
+        return storage.getLeader();
+    }
+
+    protected LeaderElector getElector() {
+        return elector;
     }
 
     /**
@@ -330,7 +330,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     @Override
     public void suspect(final int view) {
         logger.warn(processDescriptor.logMark_Benchmark, "Suspecting {} on view {}",
-                processDescriptor.getLeaderOfView(view), view);
+                storage.getLeaderOfView(view), view);
         // Called by the Failure detector thread. Dispatch to the protocol
         // thread
         dispatcher.submit(new Runnable() {
@@ -339,6 +339,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
                 // The view may have changed since this task was scheduled.
                 // If so, ignore this suspicion.
                 if (view == storage.getView()) {
+                    elector.start();
                     startProposer();
                 } else {
                     logger.info("Ignoring suspicion for view {}. Current view: {}", view,
@@ -357,7 +358,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
      */
     private class MessageHandlerImpl implements MessageHandler {
         public void onMessageReceived(Message msg, int sender) {
-            logger.debug("Msg rcv by Paxos class: {}", msg);
+            //logger.debug("Msg rcv by Paxos class: {}", msg);
 
             MessageEvent event = new MessageEvent(msg, sender);
             Future<?> f = dispatcher.submit(event);
@@ -387,13 +388,13 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
                  * log size; may be useful and is harmless
                  */
                 if (msg.getView() < storage.getView() && !(msg instanceof Alive)) {
-                    logger.debug("Ignoring message. Current view: {}, Message: ",
+                    logger.info("Ignoring message. Current view: {}, Message: ",
                             storage.getView(), msg);
                     return;
                 }
 
                 if (msg.getView() > storage.getView()) {
-                    logger.debug("Got message with higher view: {} (current {})", msg,
+                    logger.info("Got message with higher view: {} (current {})", msg,
                             storage.getView());
                     if (msg.getType() == MessageType.PrepareOK) {
                         logger.error("Theoretically it can happen. If you ever see this message, tell JK");
