@@ -89,17 +89,20 @@ public class InMemoryStorage implements Storage {
     public void setView(int view) throws IllegalArgumentException {
         assert view > this.view : "Cannot set smaller or equal view.";
         this.view = view;
-        this.leaders.put(view, leader);
-        fireViewChangeListeners();
+        updateHistoryAndNotify();
         logger.info("InMemoryStorage: setting view {}", view);
     }
 
     @Override
     public void setLeader(int id) {
         this.leader = id;
-        this.leaders.put(view, id);
-        //fireViewChangeListeners();
+        updateHistoryAndNotify();
         logger.info("InMemoryStorage: setting leader {}", id);
+    }
+
+    private void updateHistoryAndNotify() {
+        this.leaders.put(view, leader);
+        fireViewChangeListeners();
     }
 
     public int getFirstUncommitted() {
