@@ -547,7 +547,10 @@ public class ProposerImpl implements Proposer {
         assert proposeRetransmitters.containsKey(instanceId);
         assert paxos.getDispatcher().amIInDispatcher();
 
-        proposeRetransmitters.get(instanceId).stop(destination);
+        RetransmittedMessage msg = proposeRetransmitters.get(instanceId);
+        if (msg != null) {
+            msg.stop(destination);
+        }
     }
 
     public ClientBatchManager getClientBatchManager() {

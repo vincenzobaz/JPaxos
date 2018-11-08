@@ -90,7 +90,7 @@ class Learner {
             logger.debug("Out of order. Received ACCEPT before PROPOSE. Instance: {}", instance);
         }
 
-        if (paxos.isLeader()) {
+        if (paxos.getStorage().isLocalProcessLeader(instance.getView())) {
             proposer.stopPropose(instance.getId(), sender);
         }
 
