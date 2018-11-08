@@ -67,7 +67,7 @@ public class ProposerImpl implements Proposer {
      * Initializes new instance of <code>Proposer</code>. If the id of current
      * replica is 0 then state is set to <code>ACTIVE</code>. Otherwise
      * <code>INACTIVE</code> state is set.
-     * 
+     *
      * @param paxos - the paxos the acceptor belong to
      * @param network - data associated with the paxos
      * @param failureDetector - used to notify about leader change
@@ -102,7 +102,7 @@ public class ProposerImpl implements Proposer {
 
     /**
      * Gets the current state of the proposer.
-     * 
+     *
      * @return <code>INACTIVE</code>,
      *         <code>PREPARING<code/> or <code>PREPARED<code/>
      */
@@ -114,7 +114,7 @@ public class ProposerImpl implements Proposer {
      * If previous leader is suspected this procedure is executed. We're
      * changing the view (variable indicating order of the leaders in time)
      * accordingly, and we're sending the prepare message.
-     * 
+     *
      */
     public void prepareNextView() {
         assert paxos.getDispatcher().amIInDispatcher();
@@ -434,7 +434,7 @@ public class ProposerImpl implements Proposer {
      * many active propositions, this proposal will be enqueued until there are
      * available slots. If the proposer is <code>INACTIVE</code>, then message
      * is discarded. Otherwise value is added to list of active proposals.
-     * 
+     *
      * @param value - the value to propose
      * @throws InterruptedException
      */
@@ -486,7 +486,7 @@ public class ProposerImpl implements Proposer {
      * orphaned instances. This method activates retransmission of propose
      * messages for instances, which we already have in our logs (
      * {@link sendNextProposal} and {@link Propose} create a new instance)
-     * 
+     *
      * @param instance instance we want to revoke
      */
     private void continueProposal(ConsensusInstance instance) {
@@ -522,7 +522,7 @@ public class ProposerImpl implements Proposer {
 
     /**
      * After reception of majority accepts, we suppress propose messages.
-     * 
+     *
      * @param instanceId no. of instance, for which we want to stop
      *            retransmission
      */
@@ -538,7 +538,7 @@ public class ProposerImpl implements Proposer {
     /**
      * If retransmission to some process for certain instance is no longer
      * needed, we should stop it
-     * 
+     *
      * @param instanceId no. of instance, for which we want to stop
      *            retransmission
      * @param destination number of the process in processes PID list
@@ -547,10 +547,7 @@ public class ProposerImpl implements Proposer {
         assert proposeRetransmitters.containsKey(instanceId);
         assert paxos.getDispatcher().amIInDispatcher();
 
-        RetransmittedMessage msg = proposeRetransmitters.get(instanceId);
-        if (msg != null) {
-            msg.stop(destination);
-        }
+        proposeRetransmitters.get(instanceId).stop(destination);
     }
 
     public ClientBatchManager getClientBatchManager() {
