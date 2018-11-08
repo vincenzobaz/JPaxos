@@ -15,7 +15,7 @@ public class SynchronousViewStorage extends InMemoryStorage {
      */
     public SynchronousViewStorage(SingleNumberWriter writer) {
         this.writer = writer;
-        this.view = (int) writer.readNumber();
+        setView((int) writer.readNumber());
     }
 
     public void setView(int view) throws IllegalArgumentException {

@@ -26,7 +26,7 @@ public class SynchronousStorage extends InMemoryStorage {
     public SynchronousStorage(DiscWriter writer) throws IOException {
         assert CrashModel.FullSS.equals(ProcessDescriptor.processDescriptor.crashModel);
 
-        view = writer.loadViewNumber();
+        setView(writer.loadViewNumber());
         this.writer = writer;
 
         // synchronous log reads the previous log files

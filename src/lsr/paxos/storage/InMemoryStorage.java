@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class InMemoryStorage implements Storage {
     // Must be volatile because it is read by other threads
     // other than the Protocol thread without locking.
-    protected volatile int view;
+    private volatile int view;
     private volatile int leader = 0;
     private final ConcurrentMap<Integer, Integer> leaders = new ConcurrentHashMap<>();
     private volatile int firstUncommitted = 0;
@@ -72,6 +72,9 @@ public class InMemoryStorage implements Storage {
 
     @Override
     public int getLeaderOfView(int viewId) {
+        if (!leaders.containsKey(viewId)) {
+            logger.info("WTF");
+        }
         return leaders.get(viewId);
     }
 
