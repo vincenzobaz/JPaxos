@@ -313,10 +313,10 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
         if (logger.isInfoEnabled()) {
             logger.info("Advancing to view {} from {}, Leader={}", newView, oldView,
-                    (newView % processDescriptor.numReplicas));
+                    (storage.getLeaderOfView(newView)));
         }
 
-        if (isLeader()) {
+        if (storage.isLocalProcessLeader(newView)) {
             batcher.suspendBatcher();
             proposer.stopProposer();
         }
