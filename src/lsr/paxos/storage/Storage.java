@@ -180,6 +180,8 @@ public interface Storage {
      */
     void updateEpoch(long epoch, int sender);
 
+    void fillLeader(int i, int nextLeader);
+
     /** Interface for monitoring view (leader) changes */
     static interface ViewChangeListener {
         /**

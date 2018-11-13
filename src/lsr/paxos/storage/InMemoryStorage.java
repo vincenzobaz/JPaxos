@@ -72,10 +72,11 @@ public class InMemoryStorage implements Storage {
 
     @Override
     public int getLeaderOfView(int viewId) {
+        if (viewId < 0) return 0;
         if (!leaders.containsKey(viewId)) {
-            logger.info("WTF");
+            logger.info("No leader for the provided view ({})", viewId);
         }
-        return leaders.get(viewId);
+        return leaders.getOrDefault(viewId, getLeaderOfView(viewId - 1));
     }
 
     @Override
@@ -101,6 +102,11 @@ public class InMemoryStorage implements Storage {
         this.leader = id;
         updateHistoryAndNotify();
         logger.info("InMemoryStorage: setting leader {}", id);
+    }
+
+    @Override
+    public void fillLeader(int view, int leader) {
+        leaders.put(view, leader);
     }
 
     private void updateHistoryAndNotify() {

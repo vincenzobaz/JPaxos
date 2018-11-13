@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * and informs the listener of decisions using callbacks. This implementation is
  * monolithic, in the sense that leader election/view change are integrated on
  * the paxos protocol.
- * 
+ *
  * <p>
  * The first consensus instance is 0. Decisions might not be reached in sequence
  * number order.
@@ -63,7 +63,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
      * The Dispatcher thread executes the replication protocol. It receives and
      * executes events placed on the pendingEvents queue: messages from other
      * processes or proposals from the local process.
-     * 
+     * <p>
      * Only this thread is allowed to access the state of the replication
      * protocol. Therefore, there is no need for synchronization when accessing
      * this state. The synchronization is handled by the
@@ -80,18 +80,19 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     private final CatchUp catchUp;
     private final SnapshotMaintainer snapshotMaintainer;
 
-    /** Receives, queues and creates batches with client requests. */
+    /**
+     * Receives, queues and creates batches with client requests.
+     */
     private final Batcher batcher;
     protected boolean active = false;
 
     /**
      * Initializes new instance of {@link Paxos}.
-     * 
-     * @param decideCallback - the class that should be notified about
-     *            decisions.
+     *
+     * @param decideCallback   - the class that should be notified about
+     *                         decisions.
      * @param snapshotProvider
-     * @param storage - the state of the paxos protocol
-     * 
+     * @param storage          - the state of the paxos protocol
      * @throws IOException if an I/O error occurs
      */
     public Paxos(SnapshotProvider snapshotProvider, Storage storage) throws IOException {
@@ -130,8 +131,8 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             network = new GenericNetwork(tcpNetwork, udpNetwork);
         } else {
             throw new IllegalArgumentException("Unknown network type: " +
-                                               processDescriptor.network +
-                                               ". Check paxos.properties configuration.");
+                    processDescriptor.network +
+                    ". Check paxos.properties configuration.");
         }
         logger.info("Network: {}", network.getClass().getCanonicalName());
 
@@ -202,10 +203,10 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     /**
      * Proposes new value to paxos protocol.
-     * 
+     * <p>
      * This process has to be a leader to call this method. If the process is
      * not a leader, exception is thrown.
-     * 
+     *
      * @param request - the value to propose
      */
     public void enqueueRequest(RequestType request) {
@@ -230,9 +231,9 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     /**
      * Is this process on the role of leader?
-     * 
+     *
      * @return <code>true</code> if current process is the leader;
-     *         <code>false</code> otherwise
+     * <code>false</code> otherwise
      */
     public boolean isLeader() {
         return storage.isLocalProcessLeader();
@@ -240,7 +241,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     /**
      * Gets the id of the replica which is currently the leader.
-     * 
+     *
      * @return id of replica which is leader
      */
     public int getLeaderId() {
@@ -254,7 +255,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     /**
      * Gets the dispatcher used by paxos to avoid concurrency in handling
      * events.
-     * 
+     *
      * @return current dispatcher object
      */
     public SingleThreadDispatcher getDispatcher() {
@@ -263,7 +264,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     /**
      * Changes state of specified consensus instance to <code>DECIDED</code>.
-     * 
+     *
      * @param instanceId - the id of instance that has been decided
      */
     public void decide(int instanceId) {
@@ -298,12 +299,12 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     /**
      * Increases the view of this process to specified value. The new view has
      * to be greater than the current one.
-     * 
+     * <p>
      * This method is executed when this replica receives a message from a
      * higher view, so the replica is not the leader of newView.
-     * 
+     * <p>
      * This may be called before the view is prepared.
-     * 
+     *
      * @param newView - the new view number
      */
     public void advanceView(int newView) {
@@ -312,11 +313,10 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
         assert newView > oldView : "Can't advance to the same or lower view";
 
         if (logger.isInfoEnabled()) {
-            logger.info("Advancing to view {} from {}, Leader={}", newView, oldView,
-                    (storage.getLeaderOfView(newView)));
+            logger.info("Advancing to view {} from {}", newView, oldView);
         }
 
-        if (storage.isLocalProcessLeader(newView)) {
+        if (storage.isLocalProcessLeader()) {
             batcher.suspendBatcher();
             proposer.stopProposer();
         }
@@ -338,8 +338,8 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             public void run() {
                 // The view may have changed since this task was scheduled.
                 // If so, ignore this suspicion.
-                if (view == storage.getView()) {
-                    elector.start();
+                if (storage.getLeaderOfView(view) == storage.getLeader() /*&& view == storage.getView()*/) {
+                    elector.start(storage.getLeaderOfView(view));
                     startProposer();
                 } else {
                     logger.info("Ignoring suspicion for view {}. Current view: {}", view,
@@ -352,6 +352,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     // *****************
     // Auxiliary classes
     // *****************
+
     /**
      * Receives messages from other processes and stores them on the
      * pendingEvents queue for processing by the Dispatcher thread.
@@ -445,7 +446,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
         /**
          * After getting an alive message, we need to check whether we're up to
          * date.
-         * 
+         *
          * @param aliveNextId - the actual size of the log
          */
         private boolean checkIfCatchUpNeeded(int aliveNextId) {
@@ -480,7 +481,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     /**
      * Returns the storage with the current state of paxos protocol.
-     * 
+     *
      * @return the storage
      */
     public Storage getStorage() {
@@ -493,7 +494,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     /**
      * Returns the catch-up mechanism used by paxos protocol.
-     * 
+     *
      * @return the catch-up mechanism
      */
     public CatchUp getCatchup() {
