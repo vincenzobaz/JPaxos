@@ -338,7 +338,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             public void run() {
                 // The view may have changed since this task was scheduled.
                 // If so, ignore this suspicion.
-                if (storage.getLeaderOfView(view) == storage.getLeader() /*&& view == storage.getView()*/) {
+                if (storage.getLeaderOfView(view) == storage.getLeader() /*|| view == storage.getView()*/) {
                     elector.start(storage.getLeaderOfView(view));
                     startProposer();
                 } else {
