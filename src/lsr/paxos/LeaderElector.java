@@ -12,12 +12,20 @@ import org.slf4j.LoggerFactory;
 import java.util.BitSet;
 
 public class LeaderElector implements MessageHandler {
-    private int toReplace;
-    private int nextLeader;
-    private int missingValues;
     private Storage storage;
-    private boolean active;
+
+    // Replica to replace as leader
+    private int toReplace;
+    // The view in which the election starts
     private int startView;
+    // Whether this elector is in action
+    private boolean active;
+
+    // Current candidate for next leader
+    private int nextLeader;
+    // Missing log entries for the current leader
+    private int[] missingLogEntries;
+
 
     public LeaderElector(Storage storage) {
         this.storage = storage;
@@ -42,7 +50,7 @@ public class LeaderElector implements MessageHandler {
      * Called when a majority of PrepareOK is received
      */
     public void stop() {
-        logger.info("LeaderElector leader of {} is {}", storage.getLeader(), nextLeader);
+        logger.info("LeaderElector leader of {} is {}", storage.getView(), nextLeader);
         storage.setLeader(nextLeader);
         for (int i = startView; i < storage.getView(); i++) {
             storage.fillLeader(i, nextLeader);
@@ -54,7 +62,7 @@ public class LeaderElector implements MessageHandler {
         this.startView = storage.getView();
         this.toReplace = toReplace;
         this.nextLeader = storage.getLeader();
-        this.missingValues = storage.getFirstUncommitted();
+        this.missingLogEntries = storage.getHolesIDs();
     }
 
     @Override
@@ -67,22 +75,48 @@ public class LeaderElector implements MessageHandler {
         // Safe: the constructor only subscribes to prepares
         Prepare prep = (Prepare) msg;
 
-        // He is better than me, new potential winner!
-        if (prep.getFirstUncommitted() > missingValues) {
-            missingValues = prep.getFirstUncommitted();
+        // TODO: Specify that they are sorted
+        int currMax = missingLogEntries[0];
+        int senderMax = prep.getHolesIDs()[0];
+        int currHoles = missingLogEntries.length;
+        int senderHoles = prep.getHolesIDs().length;
+
+        // If he has less holes than me in his log, he's better!
+        // If we have the same number of missing entries, but his smallest missing is higher than mine
+        if ((senderHoles < currHoles || (senderHoles == currHoles && senderMax > currMax)) && sender != toReplace) {
+            missingLogEntries = prep.getHolesIDs();
             nextLeader = sender;
+            logger.info("LeaderElector finished processing, improvement: new candidate {}", nextLeader);
             return;
         }
 
-        // In case of ties, choose smallest ID
-        if (prep.getFirstUncommitted() == missingValues) {
-            nextLeader = Math.min(sender, nextLeader);
+        int nextL = nextLeader;
+        int[] holes = missingLogEntries;
+
+        // In case of ties, choose replica with smallest ID
+        if (sender == currHoles && senderMax == currMax) {
+            nextL = Math.min(sender, nextL);
+            logger.info("LeaderElector TIE");
+            if (nextL == sender) holes = prep.getHolesIDs();
         }
 
-        // If my current choice is the crushed replica, change it in any case
-        if (nextLeader == toReplace) {
-            nextLeader = sender;
+        // If my current choice is the crashed replica, change it in any case
+        if (nextL == toReplace) {
+            if (nextL == sender) {
+                // The current choice is crashed and is the sender, restore previous candidate
+                nextL = nextLeader;
+                holes = missingLogEntries;
+            } else {
+                // The current choice is crashed and is the current candidate, pick the sender
+                nextL = sender;
+                holes = prep.getHolesIDs();
+            }
+            logger.info("LeaderElector had elected toReplace ({}), fixing mistake with {}", toReplace, nextL);
         }
+
+        nextLeader = nextL;
+        missingLogEntries = holes;
+        logger.info("LeaderElector finished processing, new candidate {}", nextLeader);
     }
 
     public boolean isActive() {

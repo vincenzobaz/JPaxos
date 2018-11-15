@@ -206,4 +206,6 @@ public interface Storage {
      * - other replica may return the same ID
      */
     long getRunUniqueId();
+
+    int[] getHolesIDs();
 }

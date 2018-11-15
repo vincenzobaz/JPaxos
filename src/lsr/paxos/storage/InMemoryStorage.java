@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.IntStream;
 
 import lsr.paxos.Snapshot;
 import lsr.paxos.storage.ConsensusInstance.LogEntryState;
@@ -201,6 +202,18 @@ public class InMemoryStorage implements Storage {
                 throw new RuntimeException();
         }
         return base;
+    }
+
+    @Override
+    public int[] getHolesIDs() {
+        int nextID = log.getNextId();
+        if (firstUncommitted < nextID) {
+            return IntStream.range(firstUncommitted, log.getNextId())
+                    .filter(id -> log.getInstance(id).getState() != LogEntryState.DECIDED)
+                    .toArray();
+        } else {
+            return new int[]{firstUncommitted};
+        }
     }
 
     private final static Logger logger = LoggerFactory.getLogger(InMemoryStorage.class);

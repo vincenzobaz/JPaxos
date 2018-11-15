@@ -1,8 +1,11 @@
 package lsr.paxos.messages;
 
+import lsr.paxos.storage.ConsensusInstance;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Represents request to prepare consensus instances higher or equal to
@@ -14,19 +17,18 @@ import java.nio.ByteBuffer;
  */
 public final class Prepare extends Message {
     private static final long serialVersionUID = 1L;
-    private final int firstUncommitted;
+    private final int[] holesId;
 
     /**
      * Creates new <code>Prepare</code> message. This is request to preparing
      * new view number.
      * 
      * @param view - the view being prepared
-     * @param firstUncommitted - the first consensus instance for which sender
-     *            process doesn't know the decision
+     * @param holes - the IDs of the missing entries in the log
      */
-    public Prepare(int view, int firstUncommitted) {
+    public Prepare(int view, int[] holes) {
         super(view);
-        this.firstUncommitted = firstUncommitted;
+        this.holesId = holes;
     }
 
     /**
@@ -37,17 +39,14 @@ public final class Prepare extends Message {
      */
     public Prepare(DataInputStream input) throws IOException {
         super(input);
-        firstUncommitted = input.readInt();
+        this.holesId = new int[input.readInt()];
+        for (int i = 0; i < holesId.length; i++) {
+            this.holesId[i] = input.readInt();
+        }
     }
 
-    /**
-     * Returns id of first consensus instance sender does not know the decision
-     * for.
-     * 
-     * @return id of first uncommitted consensus instance
-     */
-    public int getFirstUncommitted() {
-        return firstUncommitted;
+    public int[] getHolesIDs() {
+        return holesId;
     }
 
     public MessageType getType() {
@@ -55,14 +54,17 @@ public final class Prepare extends Message {
     }
 
     public int byteSize() {
-        return super.byteSize() + 4;
+        return super.byteSize() + 4 + (holesId.length * 4);
     }
 
     public String toString() {
-        return "Prepare(" + super.toString() + ", firstUncommitted: " + firstUncommitted + ")";
+        return "Prepare(" + super.toString() + ", id of log holes " + Arrays.toString(holesId) + ")";
     }
 
     protected void write(ByteBuffer bb) {
-        bb.putInt(firstUncommitted);
+        bb.putInt(holesId.length);
+        for (int i = 0; i < holesId.length; i++) {
+            bb.putInt(holesId[i]);
+        }
     }
 }

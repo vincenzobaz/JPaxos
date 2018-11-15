@@ -124,7 +124,7 @@ public class ProposerImpl implements Proposer {
 
         logger.info(processDescriptor.logMark_Benchmark, "Preparing view: {}", storage.getView());
 
-        Prepare prepare = new Prepare(storage.getView(), storage.getFirstUncommitted());
+        Prepare prepare = new Prepare(storage.getView(), storage.getHolesIDs());
         prepareRetransmitter.startTransmitting(prepare, Network.OTHERS);
         paxos.getElector().onMessageReceived(prepare, processDescriptor.localId);
 

@@ -2,7 +2,9 @@ package lsr.paxos.core;
 
 import static lsr.common.ProcessDescriptor.processDescriptor;
 
+import java.util.Arrays;
 import java.util.Deque;
+import java.util.SortedMap;
 
 import lsr.paxos.UnBatcher;
 import lsr.paxos.messages.Accept;
@@ -21,6 +23,7 @@ import lsr.paxos.storage.Storage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import put.consensus.Consensus;
 
 /**
  * Represents part of paxos which is responsible for responding on the
@@ -70,18 +73,20 @@ class Acceptor {
         logger.info("{} From {}", msg, sender);
 
         Log log = storage.getLog();
+        SortedMap<Integer, ConsensusInstance> instances = log.getInstanceMap();
 
-        if (msg.getFirstUncommitted() < log.getLowestAvailableId()) {
+        /*
+        int firstUncommitted = msg.getHolesIDs()[0];
+        if (firstUncommitted < log.getLowestAvailableId()) {
             // We're MUCH MORE up-to-date than the replica that sent Prepare
             paxos.startProposer();
             return;
         }
-
-        ConsensusInstance[] v = new ConsensusInstance[Math.max(
-                log.getNextId() - msg.getFirstUncommitted(), 0)];
-        for (int i = msg.getFirstUncommitted(); i < log.getNextId(); i++) {
-            v[i - msg.getFirstUncommitted()] = log.getInstance(i);
-        }
+        */
+        ConsensusInstance[] v = Arrays.stream(msg.getHolesIDs())
+                .filter(instances::containsKey)
+                .mapToObj(instances::get)
+                .toArray(ConsensusInstance[]::new);
 
         PrepareOK m = new PrepareOK(msg.getView(), v, storage.getEpoch());
         logger.info("Sending {}", m);
