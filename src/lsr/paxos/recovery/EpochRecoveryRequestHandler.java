@@ -65,7 +65,7 @@ public class EpochRecoveryRequestHandler implements MessageHandler {
                 storage.updateEpoch(recovery.getEpoch(), sender);
                 RecoveryAnswer answer = new RecoveryAnswer(storage.getView(),
                         storage.getEpoch(),
-                        storage.getLog().getNextId());
+                        storage.getLog().getNextId(), storage.getLeader());
                 paxos.getNetwork().sendMessage(answer, sender);
             }
         });

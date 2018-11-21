@@ -83,7 +83,7 @@ public class ViewRecoveryRequestHandler implements MessageHandler {
                 logger.info(processDescriptor.logMark_Benchmark, "Received {}", recovery);
 
                 RecoveryAnswer answer = new RecoveryAnswer(storage.getView(),
-                        storage.getLog().getNextId());
+                        storage.getLog().getNextId(), storage.getLeader());
                 paxos.getNetwork().sendMessage(answer, sender);
             }
         });

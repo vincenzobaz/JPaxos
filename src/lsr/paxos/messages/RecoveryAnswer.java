@@ -10,17 +10,21 @@ public class RecoveryAnswer extends Message {
 
     private final long[] epoch;
     private final long nextId;
+    private final int leader;
 
-    public RecoveryAnswer(int view, long[] epoch, long nextId) {
+
+    public RecoveryAnswer(int view, long[] epoch, long nextId, int leader) {
         super(view);
         this.epoch = epoch;
         this.nextId = nextId;
+        this.leader = leader;
     }
 
-    public RecoveryAnswer(int view, long nextId) {
+    public RecoveryAnswer(int view, long nextId, int leader) {
         super(view);
         this.epoch = new long[0];
         this.nextId = nextId;
+        this.leader = leader;
     }
 
     public RecoveryAnswer(DataInputStream input) throws IOException {
@@ -33,6 +37,7 @@ public class RecoveryAnswer extends Message {
         }
 
         nextId = input.readLong();
+        leader = input.readInt();
     }
 
     protected void write(ByteBuffer bb) {
@@ -42,12 +47,14 @@ public class RecoveryAnswer extends Message {
         }
 
         bb.putLong(nextId);
+        bb.putInt(leader);
     }
 
     public int byteSize() {
         int size = super.byteSize();
         size += 4 + epoch.length * 8; // epoch
         size += 8; // nextId
+        size += 4; // leader
         return size;
     }
 
@@ -63,9 +70,13 @@ public class RecoveryAnswer extends Message {
         return nextId;
     }
 
+    public int getLeader() {
+        return leader;
+    }
+
     public String toString() {
         return "RecoveryAnswer(" + super.toString() + ",e=" + Arrays.toString(epoch) + ",next=" +
-               nextId + ")";
+               nextId + ",leader=" + leader + ")";
     }
 
 }
