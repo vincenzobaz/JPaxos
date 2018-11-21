@@ -130,6 +130,7 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
                     // update view
                     if (storage.getView() < recoveryAnswer.getView()) {
                         storage.setView(recoveryAnswer.getView());
+                        storage.fillLeader(recoveryAnswer.getView(), recoveryAnswer.getLeader());
                         answerFromLeader = null;
                     }
 
