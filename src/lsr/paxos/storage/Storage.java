@@ -89,6 +89,8 @@ public interface Storage {
      */
     void setLeader(int id);
 
+    void setLeaderAndView(int leader, int view);
+
     /**
      * Returns the leader of a given view.
      *

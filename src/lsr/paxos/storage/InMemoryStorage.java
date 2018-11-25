@@ -75,7 +75,7 @@ public class InMemoryStorage implements Storage {
     public int getLeaderOfView(int viewId) {
         if (viewId < 0) return 0;
         if (!leaders.containsKey(viewId)) {
-            logger.info("No leader for the provided view ({})", viewId);
+            logger.info("No leader for the provided view ({}) D={}", viewId, leaders.toString());
         }
         return leaders.getOrDefault(viewId, getLeaderOfView(viewId - 1));
     }
@@ -87,7 +87,7 @@ public class InMemoryStorage implements Storage {
 
     @Override
     public boolean isLocalProcessLeader(int viewId) {
-        return leaders.get(viewId) == processDescriptor.localId;
+        return getLeaderOfView(viewId) == processDescriptor.localId;
     }
 
     @Override
@@ -103,6 +103,13 @@ public class InMemoryStorage implements Storage {
         this.leader = id;
         updateHistoryAndNotify();
         logger.info("InMemoryStorage: setting leader {}", id);
+    }
+
+    @Override
+    public void setLeaderAndView(int leader, int view) {
+        this.view = view;
+        this.leader = leader;
+        updateHistoryAndNotify();
     }
 
     @Override
