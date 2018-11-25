@@ -127,10 +127,14 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
                     recoveryRetransmitter.stop(sender);
                     received.set(sender);
 
-                    // update view
-                    if (storage.getView() < recoveryAnswer.getView()) {
-                        storage.setView(recoveryAnswer.getView());
-                        storage.fillLeader(recoveryAnswer.getView(), recoveryAnswer.getLeader());
+                    // update view and leaders
+                    int currView = storage.getView();
+                    if (currView <= recoveryAnswer.getView()) {
+                        int[] leaders = recoveryAnswer.getLeaders();
+                        for (int i = 0; i < leaders.length; i++) {
+                            storage.fillLeader(recoveryAnswer.getView() - i, leaders[leaders.length - 1 - i]);
+                        }
+                        storage.setLeaderAndView(leaders[leaders.length - 1], recoveryAnswer.getView());
                         answerFromLeader = null;
                     }
 
@@ -146,6 +150,7 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
         }
 
         private void onCardinality() {
+            logger.info("Majority if RecoveryAnswer");
             recoveryRetransmitter.stop();
             recoveryRetransmitter = null;
 
