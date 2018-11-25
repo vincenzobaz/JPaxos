@@ -63,9 +63,13 @@ public class EpochRecoveryRequestHandler implements MessageHandler {
                 }
 
                 storage.updateEpoch(recovery.getEpoch(), sender);
+                int[] leaders = new int[storage.getView() - recovery.getView()];
+                for (int i = 0; i < leaders.length; i++) {
+                    leaders[i] = storage.getLeaderOfView(recovery.getView() + 1 + i);
+                }
                 RecoveryAnswer answer = new RecoveryAnswer(storage.getView(),
                         storage.getEpoch(),
-                        storage.getLog().getNextId(), storage.getLeader());
+                        storage.getLog().getNextId(), leaders);
                 paxos.getNetwork().sendMessage(answer, sender);
             }
         });

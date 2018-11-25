@@ -144,8 +144,11 @@ public class EpochSSRecovery extends RecoveryAlgorithm implements Runnable {
 
                     // update view
                     if (storage.getView() < recoveryAnswer.getView()) {
-                        storage.setView(recoveryAnswer.getView());
-                        storage.fillLeader(recoveryAnswer.getView(), recoveryAnswer.getLeader());
+                        int[] leaders = recoveryAnswer.getLeaders();
+                        for (int i = 0; i < leaders.length; i++) {
+                            storage.fillLeader(recoveryAnswer.getView() - i, leaders[leaders.length - 1 - i]);
+                        }
+                        storage.setLeaderAndView(leaders[leaders.length - 1], recoveryAnswer.getView());
                         answerFromLeader = null;
                     }
 
