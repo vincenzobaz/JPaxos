@@ -10,6 +10,9 @@ import lsr.common.RequestType;
 import lsr.common.SingleThreadDispatcher;
 import lsr.paxos.*;
 import lsr.paxos.core.Proposer.ProposerState;
+import lsr.paxos.election.BestLeaderElector;
+import lsr.paxos.election.LeaderElector;
+import lsr.paxos.election.WorstLeaderElector;
 import lsr.paxos.messages.Accept;
 import lsr.paxos.messages.Alive;
 import lsr.paxos.messages.Message;
@@ -89,8 +92,6 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
     /**
      * Initializes new instance of {@link Paxos}.
      *
-     * @param decideCallback   - the class that should be notified about
-     *                         decisions.
      * @param snapshotProvider
      * @param storage          - the state of the paxos protocol
      * @throws IOException if an I/O error occurs
@@ -153,7 +154,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             udpNetwork.start();
         network.start();
         dispatcher.start();
-        elector = new LeaderElector(storage);
+        elector = new BestLeaderElector(storage);
     }
 
     public void setDecideCallback(DecideCallback decideCallback) {
@@ -311,19 +312,13 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
         assert dispatcher.amIInDispatcher();
         int oldView = storage.getView();
         assert newView > oldView : "Can't advance to the same or lower view";
+        logger.info("Advancing to view {} from {} lead by", newView, oldView, storage.getLeaderOfView(newView));
 
-        if (logger.isInfoEnabled()) {
-            logger.info("Advancing to view {} from {}", newView, oldView);
-        }
-
-        if (storage.isLocalProcessLeader()) {
+        if (storage.isLocalProcessLeader(oldView) && !storage.isLocalProcessLeader(newView)) {
             batcher.suspendBatcher();
             proposer.stopProposer();
         }
-
         storage.setView(newView);
-        // line above changed the leader
-
         assert !isLeader() : "Cannot advance to a view where process is leader by receiving a message.";
     }
 
@@ -338,7 +333,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             public void run() {
                 // The view may have changed since this task was scheduled.
                 // If so, ignore this suspicion.
-                if (storage.getLeaderOfView(view) == storage.getLeader() /*|| view == storage.getView()*/) {
+                if (storage.getLeaderOfView(view) == storage.getLeader()) {
                     elector.start(storage.getLeaderOfView(view));
                     startProposer();
                 } else {
@@ -421,6 +416,11 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
                         acceptor.onPropose((Propose) msg, sender);
                         if (!storage.isInWindow(((Propose) msg).getInstanceId())) {
                             activateCatchup();
+                        }
+                        // If the elector is active and a Propose arrives, the leader has been chosen, need to notify the others
+                        if (elector.isActive()) {
+                            elector.setCandidate(sender);
+                            elector.stop();
                         }
                         break;
 
