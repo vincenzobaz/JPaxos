@@ -1,4 +1,4 @@
-package lsr.paxos;
+package lsr.paxos.election;
 
 import lsr.paxos.messages.Message;
 import lsr.paxos.messages.MessageType;
@@ -10,52 +10,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.BitSet;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 
-public class LeaderElector implements MessageHandler {
+import static lsr.common.ProcessDescriptor.processDescriptor;
+
+public abstract class LeaderElector implements MessageHandler, Comparator<int[]> {
     private Storage storage;
-
     // Replica to replace as leader
     private int toReplace;
     // The view in which the election starts
     private int startView;
     // Whether this elector is in action
     private boolean active;
-
-    // Current candidate for next leader
+    private Set<Integer> intervenedReplicas;
     private int nextLeader;
-    // Missing log entries for the current leader
     private int[] missingLogEntries;
 
-
-    public LeaderElector(Storage storage) {
+    LeaderElector(Storage storage) {
         this.storage = storage;
         Network.addMessageListener(MessageType.Prepare, this);
         init(-1);
         active = false;
-    }
+        this.intervenedReplicas = new HashSet<>();
 
-    /**
-     * Start the election of a new leader
-     *
-     * @param toReplace the replica to be replaced as leader
-     */
-    public void start(int toReplace) {
-        init(toReplace);
-        logger.info("LeaderElector asked to start to replace {}", toReplace);
-        active = true;
-    }
-
-    /**
-     * Concludes the election and notify the replica of its result.
-     * Called when a majority of PrepareOK is received
-     */
-    public void stop() {
-        logger.info("LeaderElector leader of {} is {}", storage.getView(), nextLeader);
-        storage.setLeader(nextLeader);
-        for (int i = startView; i < storage.getView(); i++) {
-            storage.fillLeader(i, nextLeader);
-        }
-        active = false;
     }
 
     private void init(int toReplace) {
@@ -65,8 +44,48 @@ public class LeaderElector implements MessageHandler {
         this.missingLogEntries = storage.getHolesIDs();
     }
 
+    /**
+     * Start the election of a new leader
+     *
+     * @param toReplace the replica to be replaced as leader
+     */
+    final public void start(int toReplace) {
+        init(toReplace);
+        logger.info("LeaderElector asked to start to replace {}", toReplace);
+        active = true;
+    }
+
+    /**
+     * Concludes the election and notify the replica of its result.
+     * Called when a majority of PrepareOK is received
+     */
+    final public void stop() {
+        if (intervenedReplicas.size() == 1 && intervenedReplicas.contains(processDescriptor.localId)) {
+            // I am the only one to have intervened, continue election
+            logger.info("LeaderElector asked to stop only after local vote. Continuing");
+            return;
+        }
+        logger.info("LeaderElector leader of {} is {}", storage.getView(), nextLeader);
+        storage.setLeader(nextLeader);
+        for (int i = startView; i < storage.getView(); i++) {
+            storage.fillLeader(i, nextLeader);
+        }
+        storage.setLeader(nextLeader);
+        active = false;
+        intervenedReplicas.clear();
+    }
+
+    final public boolean isActive() {
+        return active;
+    }
+
+
+    final public void setCandidate(int candidate) {
+        this.nextLeader = candidate;
+    }
+
     @Override
-    public void onMessageReceived(Message msg, int sender) {
+    final public void onMessageReceived(Message msg, int sender) {
         if (!active || msg.getView() < startView) {
             return;
         }
@@ -75,15 +94,12 @@ public class LeaderElector implements MessageHandler {
         // Safe: the constructor only subscribes to prepares
         Prepare prep = (Prepare) msg;
 
-        // TODO: Specify that they are sorted
-        int currMax = missingLogEntries[0];
-        int senderMax = prep.getHolesIDs()[0];
-        int currHoles = missingLogEntries.length;
-        int senderHoles = prep.getHolesIDs().length;
+        intervenedReplicas.add(sender);
 
+        int comparison = compare(missingLogEntries, prep.getHolesIDs());
         // If he has less holes than me in his log, he's better!
         // If we have the same number of missing entries, but his smallest missing is higher than mine
-        if ((senderHoles < currHoles || (senderHoles == currHoles && senderMax > currMax)) && sender != toReplace) {
+        if (comparison >= 1 && sender != toReplace) {
             missingLogEntries = prep.getHolesIDs();
             nextLeader = sender;
             logger.info("LeaderElector finished processing, improvement: new candidate {}", nextLeader);
@@ -94,9 +110,9 @@ public class LeaderElector implements MessageHandler {
         int[] holes = missingLogEntries;
 
         // In case of ties, choose replica with smallest ID
-        if (sender == currHoles && senderMax == currMax) {
+        if (comparison == 0) {
             nextL = Math.min(sender, nextL);
-            logger.info("LeaderElector TIE");
+            logger.info("LeaderElector TIE, breaking it with {}", nextL);
             if (nextL == sender) holes = prep.getHolesIDs();
         }
 
@@ -119,14 +135,9 @@ public class LeaderElector implements MessageHandler {
         logger.info("LeaderElector finished processing, new candidate {}", nextLeader);
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
-    @Override
-    public void onMessageSent(Message message, BitSet destinations) {
+    final public void onMessageSent(Message message, BitSet destinations) {
 
     }
 
-    private final static Logger logger = LoggerFactory.getLogger(LeaderElector.class);
+    protected final static Logger logger = LoggerFactory.getLogger(LeaderElector.class);
 }
