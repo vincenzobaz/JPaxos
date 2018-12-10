@@ -78,6 +78,7 @@ public class DecideCallbackImpl implements DecideCallback {
 
         if (decidedWaitingExecution.size() > 100) {
             // !!FIXME!! (JK) inform the proposer to inhibit proposing
+            logger.info("Too many proposals");
         }
 
         logger.trace("Executing requests...");

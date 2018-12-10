@@ -158,7 +158,10 @@ public class ViewSSRecovery extends RecoveryAlgorithm implements Runnable {
                 Recovery recovery = new Recovery(storage.getView(), -1);
                 recoveryRetransmitter = retransmitter.startTransmitting(recovery);
             } else {
-                startCatchup((int) answerFromLeader.getNextId());
+                //if (firstRun)
+                //startCatchup((int) answerFromLeader.getNextId());
+                //else
+                onRecoveryFinished();
                 Network.removeMessageListener(MessageType.RecoveryAnswer, this);
             }
         }

@@ -171,7 +171,8 @@ public class EpochSSRecovery extends RecoveryAlgorithm implements Runnable {
                 Recovery recovery = new Recovery(-1, localEpochNumber);
                 recoveryRetransmitter = retransmitter.startTransmitting(recovery);
             } else {
-                startCatchup((int) answerFromLeader.getNextId());
+                //startCatchup((int) answerFromLeader.getNextId());
+                onRecoveryFinished();
                 Network.removeMessageListener(MessageType.RecoveryAnswer, this);
             }
         }

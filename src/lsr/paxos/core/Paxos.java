@@ -5,6 +5,7 @@ import static lsr.common.ProcessDescriptor.processDescriptor;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 
 import lsr.common.RequestType;
 import lsr.common.SingleThreadDispatcher;
@@ -88,6 +89,8 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
      */
     private final Batcher batcher;
     protected boolean active = false;
+
+    private Runnable onActive;
 
     /**
      * Initializes new instance of {@link Paxos}.
@@ -182,6 +185,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
         failureDetector.start(storage.getView());
 
         active = true;
+        if (this.onActive != null) this.onActive.run();
 
         suspect(0);
     }
@@ -511,6 +515,10 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
 
     public boolean isActive() {
         return active;
+    }
+
+    public void onActive(Runnable f) {
+        this.onActive = f;
     }
 
     private final static Logger logger = LoggerFactory.getLogger(Paxos.class);

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import lsr.common.ClientRequest;
 import lsr.common.Configuration;
@@ -641,6 +642,10 @@ public class Replica {
 
     public boolean addLogListener(LogListener listener) {
         return paxos.getStorage().getLog().addLogListener(listener);
+    }
+
+    public void onPaxosActive(Runnable f) {
+        paxos.onActive(f);
     }
 
     private final static Logger logger = LoggerFactory.getLogger(Replica.class);
