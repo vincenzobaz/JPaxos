@@ -75,7 +75,7 @@ public class InMemoryStorage implements Storage {
     public int getLeaderOfView(int viewId) {
         if (viewId < 0) return 0;
         if (!leaders.containsKey(viewId)) {
-            logger.info("No leader for the provided view ({}) D={}", viewId, leaders.toString());
+            logger.info("No leader for the provided view ({})", viewId);
         }
         return leaders.getOrDefault(viewId, getLeaderOfView(viewId - 1));
     }
