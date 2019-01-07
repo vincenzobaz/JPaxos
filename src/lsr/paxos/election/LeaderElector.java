@@ -34,7 +34,6 @@ public abstract class LeaderElector implements MessageHandler, Comparator<int[]>
         init(-1);
         active = false;
         this.intervenedReplicas = new HashSet<>();
-
     }
 
     private void init(int toReplace) {
@@ -50,8 +49,15 @@ public abstract class LeaderElector implements MessageHandler, Comparator<int[]>
      * @param toReplace the replica to be replaced as leader
      */
     final public void start(int toReplace) {
+        if (storage.getLog().getNextId() < 1) {
+            logger.info("LeaderElector first election of the cluster");
+            active = true;
+            nextLeader = 0;
+            stop();
+            return;
+        }
         init(toReplace);
-        logger.info("LeaderElector asked to start to replace {}", toReplace);
+        logger.info("LeaderElector asked to start to replace {} in view {}", toReplace, storage.getView());
         active = true;
     }
 
@@ -60,6 +66,10 @@ public abstract class LeaderElector implements MessageHandler, Comparator<int[]>
      * Called when a majority of PrepareOK is received
      */
     final public void stop() {
+        if (!isActive()) {
+            return;
+        }
+        logger.info("LeaderElector stopped with voters {}", intervenedReplicas.toString());
         if (intervenedReplicas.size() == 1 && intervenedReplicas.contains(processDescriptor.localId)) {
             // I am the only one to have intervened, continue election
             logger.info("LeaderElector asked to stop only after local vote. Continuing");
