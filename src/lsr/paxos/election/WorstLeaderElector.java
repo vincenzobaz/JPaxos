@@ -12,11 +12,11 @@ public class WorstLeaderElector extends LeaderElector {
         int currMax = currHoles[0];
         int senderMax = senderHoles[0];
 
-        if (senderHoles.length > currHoles.length || (senderHoles == currHoles && senderMax < currMax))
-            return 1;
+        if (senderHoles.length < currHoles.length || (senderHoles == currHoles && senderMax > currMax))
+            return -1;
         else if (senderHoles.length == currHoles.length && senderMax == currMax)
             return 0;
         else
-            return -1;
+            return 1;
     }
 }
