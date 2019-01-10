@@ -157,7 +157,7 @@ public class Paxos implements FailureDetector.FailureDetectorListener {
             udpNetwork.start();
         network.start();
         dispatcher.start();
-        elector = new BestLeaderElector(storage);
+        elector = new WorstLeaderElector(storage);
     }
 
     public void setDecideCallback(DecideCallback decideCallback) {
