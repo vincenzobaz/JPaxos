@@ -1,4 +1,4 @@
-JPaxos /master/
+JPaxos /custom-leader/
 ===============
 
 Description
@@ -17,19 +17,19 @@ Our system implementation is based on solid theoretical foundations, following
 the state-of-the-art in group communication research. We intend to publish some
 of the scientific results of the JPaxos project in the future.
 
-Version
+`custom-leader`
 -------
-
-The gitub repository may not contain the most recent verion of JPaxos.
-Please do query the authors for more recent code, especially if the last
-commit is far in the past.
+This branch contains a fork of the original JPaxos implementation aiming
+to study the impact of a new leader election algorithm.
+Refer to [this report](https://github.com/vincenzobaz/JPaxos-Benchmark/blob/master/paper/main.pdf)
+for more information.
 
 Developer resources
 -------------------
 
 Documentation: http://www.it-soa.eu/jpaxos
 
-Repository: https://github.com/JPaxos/JPaxos
+Original repository: https://github.com/JPaxos/JPaxos
 
 
 License
@@ -37,31 +37,3 @@ License
 
 This software is distributed under the LGPL licence; for license details please
 read the LICENCE file.
-
-
-Contact and authors
--------------------
-
-JPaxos is joint work between the Distributed System Laboratory (LSR-EPFL)
-and Poznan University of Technology (PUT).
-Institutional pages:
-
-* EPFL: http://lsrwww.epfl.ch/cms/page-55735-en.html
-* PUT:  http://www.it-soa.pl/en/resp/jpaxos/ & http://dsg.cs.put.poznan.pl/
-
-Contributors:
-
-From LSR-EPFL:
-
-* Andre Schiper
-* Nuno Santos (no longer active)
-* Lisa Nguyen Quang Do (no longer active)
-
-From DSG@PUT:
-
-* Jan Kończak
-* Maciej Kokociński
-* Tadeusz Kobus
-* Paweł T. Wojciechowski
-* Tomasz Żurkowski (no longer active)
-
